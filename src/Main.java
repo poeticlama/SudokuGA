@@ -7,7 +7,7 @@ import java.util.*;
 public class Main {
     public static void main(String[] args) throws FileNotFoundException {
         int[][] problem = input();
-        Population population = new Population(problem);
+        Population population = new Population(problem, 1000);
     }
 
     public static int[][] input() throws FileNotFoundException {
@@ -36,9 +36,11 @@ public class Main {
 class Population {
     int[][] problem;
     List<Chromosome> population;
+    int initialSize;
 
-    public Population(int[][] problem) {
+    public Population(int[][] problem, int initialSize) {
         this.problem = problem;
+        this.initialSize = initialSize;
     }
 
     void update() {
@@ -58,9 +60,9 @@ class Population {
     }
 
     private Chromosome getCrossOverPartner(Chromosome chromosome) {
-        Chromosome partner = this.population.get(randomIndex(this.population.size())); //random index
+        Chromosome partner = this.population.get(RandomGenerator.randomIndex(this.population.size())); //random index
         while(chromosome == partner) {
-            partner = this.population.get(TSPUtils.randomIndex(this.population.size())); //Random index
+            partner = this.population.get(RandomGenerator.randomIndex(this.population.size())); //Random index
         }
         return partner;
     }
@@ -70,7 +72,9 @@ class Population {
     }
 
     private void doSpawn() {
-
+        for (int i = 0; i < initialSize; i++) {
+            this.population.add(Chromosome.create(problem));
+        }
     }
 
     private void doSelection() {
@@ -86,7 +90,7 @@ class Chromosome {
         this.matrix = matrix;
     }
 
-    public Chromosome create(Gene[] matrix) {
+    public static Chromosome create(int[][] matrix) {
 
     }
 
@@ -145,8 +149,19 @@ class Chromosome {
 }
 
 class Gene {
-    private int[] row;
+    private final int[] row;
+
+    public Gene(int[] row) {
+        this.row = row;
+    }
+
     public int getByIndex(int index) {
         return row[index];
+    }
+}
+
+class RandomGenerator {
+    public static int randomIndex(int size) {
+        return (int) (Math.random() * size);
     }
 }
