@@ -177,8 +177,46 @@ class Chromosome {
         return result;
     }
 
-    public Chromosome mutate() {
+    public Chromosome mutate(int[][] initialProblem) {
+        int index1 = RandomGenerator.randomIndex(matrix.size());
+        Gene mutated1 = matrix.get(index1);
+        int[] row1 = initialProblem[index1];
 
+        int index2 = RandomGenerator.randomIndex(matrix.size());
+        while (index2 == index1) {
+            index2 = RandomGenerator.randomIndex(matrix.size());
+        }
+        Gene mutated2 = matrix.get(index2);
+        int[] row2 = initialProblem[index2];
+
+        List<Integer> indexes1 = new ArrayList<>();
+        List<Integer> indexes2 = new ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            if (initialProblem[index1][i] != 0) {
+                indexes1.add(i);
+            }
+            if (initialProblem[index2][i] != 0) {
+                indexes2.add(i);
+            }
+        }
+
+        int mutInd1 = indexes1.get(RandomGenerator.randomIndex(indexes1.size()));
+        int mutInd2 = indexes1.get(RandomGenerator.randomIndex(indexes1.size()));
+        while (mutInd2 == mutInd1) {
+            mutInd2 = indexes1.get(RandomGenerator.randomIndex(indexes1.size()));
+        }
+        mutated1.swap(mutInd1, mutInd2);
+
+        mutInd1 = indexes2.get(RandomGenerator.randomIndex(indexes2.size()));
+        mutInd2 = indexes2.get(RandomGenerator.randomIndex(indexes2.size()));
+        while (mutInd2 == mutInd1) {
+            mutInd2 = indexes2.get(RandomGenerator.randomIndex(indexes2.size()));
+        }
+        mutated2.swap(mutInd1, mutInd2);
+
+        matrix.set(index1, mutated1);
+        matrix.set(index2, mutated2);
+        return this;
     }
 
     public int fitness() {
@@ -226,6 +264,12 @@ class Gene {
 
     public int getByIndex(int index) {
         return row[index];
+    }
+
+    public void swap(int ind1, int ind2) {
+        int temp = row[ind1];
+        row[ind1] = row[ind2];
+        row[ind2] = temp;
     }
 }
 
