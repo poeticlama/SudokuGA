@@ -3,6 +3,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Main {
     public static void main(String[] args) throws FileNotFoundException {
@@ -83,37 +85,96 @@ class Population {
 }
 
 class Chromosome {
-    private Gene[] matrix;
+    private List<Gene> matrix;
     private int duplicates;
 
-    private Chromosome(Gene[] matrix) {
+    private Chromosome(List<Gene> matrix) {
         this.matrix = matrix;
     }
 
-    public static Chromosome create(int[][] matrix) {
-
+    public static Chromosome create(int[][] problem) {
+        List<Gene> matrix = new ArrayList<Gene>();
+        for (int i = 0; i < problem.length; i++) {
+            Gene gene = new Gene(problem[i]);
+            matrix.set(i, gene);
+        }
+        return new Chromosome(matrix);
     }
 
-    public List<Gene[]> split() {
-        Gene[] first = new Gene[matrix.length / 2];
-        Gene[] second = new Gene[matrix.length - matrix.length / 2];
-        for (int i = 0; i < matrix.length; i++) {
-            if (i < matrix.length / 2) {
-                first[i] = matrix[i];
+    public List<Gene>[] split() {
+        List<Gene> first = new ArrayList<Gene>();
+        List<Gene> second = new ArrayList<Gene>();
+        for (int i = 0; i < matrix.size(); i++) {
+            if (i < matrix.size() / 2) {
+                first.set(i, matrix.get(i));
             } else {
-                second[matrix.length - i] = matrix[i];
+                second.set(i - matrix.size() / 2, matrix.get(i));
             }
         }
-        List<Gene[]> result = new ArrayList<>();
-        result.add(first);
-        result.add(second);
+        List<Gene>[] result = new List[2];
+        result[0] = first;
+        result[1] = second;
         return result;
     }
 
     public Chromosome[] crossover(Chromosome other) {
-        for (Gene gene : matrix) {
+        List<Gene>[] genesList = split();
+        List<Gene> first = genesList[0];
+        List<Gene> second = genesList[1];
 
+        List<Gene>[] genesListOther = other.split();
+        List<Gene> firstOther = genesListOther[0];
+        List<Gene> secondOther = genesListOther[1];
+
+        List<Gene> firstCrossover = new ArrayList<>(first);
+
+        if (firstCrossover.size() + secondOther.size() == 9) {
+            firstCrossover.addAll(secondOther);
+        } else if (firstCrossover.size() + secondOther.size() < 9) {
+            if (firstCrossover.size() <= 4) {
+                for (int i = 0; i < 9 - secondOther.size() - first.size(); i++) {
+                    firstCrossover.add(second.get(i));
+                }
+            } else {
+                for (int i = first.size(); i < 9 - secondOther.size(); i++) {
+                    firstCrossover.add(firstOther.get(i));
+                }
+            }
+        } else {
+            for (int i = first.size(); i < 9; i++) {
+                firstCrossover.add(first.get(i - first.size()));
+            }
+            for (int i = 9; i > first.size(); i--) {
+                firstCrossover.set(i, secondOther.get(i - 10 + secondOther.size()));
+            }
         }
+
+        List<Gene> secondCrossover = new ArrayList<>(firstOther);
+        if (secondCrossover.size() + second.size() == 9) {
+            secondCrossover.addAll(secondOther);
+        } else if (secondCrossover.size() + second.size() < 9) {
+            if (secondCrossover.size() <= 4) {
+                for (int i = 0; i < 9 - second.size() - firstOther.size(); i++) {
+                    secondCrossover.add(secondOther.get(i));
+                }
+            } else {
+                for (int i = firstOther.size(); i < 9 - second.size(); i++) {
+                    secondCrossover.add(first.get(i));
+                }
+            }
+        } else {
+            for (int i = firstOther.size(); i < 9; i++) {
+                secondCrossover.add(firstOther.get(i - firstOther.size()));
+            }
+            for (int i = 9; i > firstOther.size(); i--) {
+                secondCrossover.set(i, second.get(i - 10 + second.size()));
+            }
+        }
+
+        Chromosome[] result = new Chromosome[2];
+        result[0] = new Chromosome(firstCrossover);
+        result[1] = new Chromosome(secondCrossover);
+        return result;
     }
 
     public Chromosome mutate() {
@@ -127,7 +188,7 @@ class Chromosome {
                 Set<Integer> cubeNums = new HashSet<>();
                 for (int i = 0; i < 3; i++) {
                     for (int j = 0; j < 3; j++) {
-                        cubeNums.add(matrix[cube_row * 3 + i].getByIndex(cube_col * 3 + j));
+                        cubeNums.add(matrix.get(cube_row * 3 + i).getByIndex(cube_col * 3 + j));
                     }
                 }
                 duplicatesNum += cubeNums.size();
@@ -138,7 +199,7 @@ class Chromosome {
         for (int col = 0; col < 9; col++) {
             Set<Integer> colNums = new HashSet<>();
             for (int row = 0; row < 9; row++) {
-                colNums.add(matrix[row].getByIndex(col));
+                colNums.add(matrix.get(row).getByIndex(col));
             }
             duplicatesNum += colNums.size();
             colNums.clear();
@@ -152,6 +213,14 @@ class Gene {
     private final int[] row;
 
     public Gene(int[] row) {
+        List<Integer> sudokuNums = Stream.of(1, 2, 3, 4, 5, 6, 7, 8, 9)
+                .collect(Collectors.toCollection(ArrayList::new));
+        for (int i = 0; i < row.length; i++) {
+            if (row[i] == 0) {
+                row[i] = sudokuNums.get(RandomGenerator.randomIndex(sudokuNums.size()));
+            }
+            sudokuNums.remove(row[i]);
+        }
         this.row = row;
     }
 
