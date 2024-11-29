@@ -1,24 +1,18 @@
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.PrintStream;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Main {
-    public static void main(String[] args) throws FileNotFoundException {
+    public static void main(String[] args) {
         int[][] problem = input();
-        Population population = new Population(problem, 1000);
+        Population population = new Population(problem, 150);
+        do {
+            population.update();
+        } while (population.getAlpha().getDuplicates() != 0);
     }
 
-    public static int[][] input() throws FileNotFoundException {
-        PrintStream fout = new PrintStream(new FileOutputStream("output.txt"));
-        System.setOut(fout);
-        FileInputStream fin = new FileInputStream("input.txt");
-        System.setIn(fin);
+    public static int[][] input() {
         Scanner scanner = new Scanner(System.in);
-
         int[][] matrix = new int[9][9];
         for (int i = 0; i < 9; i++) {
             String[] line = scanner.nextLine().split(" ");
@@ -27,7 +21,6 @@ public class Main {
                     matrix[i][j] = 0;
                 } else {
                     matrix[i][j] = Integer.parseInt(line[j]);
-
                 }
             }
         }
@@ -43,6 +36,10 @@ class Population {
     public Population(int[][] problem, int initialSize) {
         this.problem = problem;
         this.initialSize = initialSize;
+        this.population = new ArrayList<>();
+        for (int i = 0; i < initialSize; i++) {
+            population.add(new Chromosome(problem));
+        }
     }
 
     void update() {
@@ -50,15 +47,25 @@ class Population {
         doMutation();
         doSpawn();
         doSelection();
+        printAlpha();
+    }
+
+    private void printAlpha() {
+        Chromosome alpha = getAlpha();
+        alpha.printChromosome();
     }
 
     private void doCrossOver() {
         List<Chromosome> newPopulation = new ArrayList<>();
-        for(Chromosome chromosome : this.population) {
+        for (Chromosome chromosome : this.population) {
             Chromosome partner = getCrossOverPartner(chromosome);
             newPopulation.addAll(Arrays.asList(chromosome.crossover(partner)));
         }
         this.population.addAll(newPopulation);
+    }
+
+    Chromosome getAlpha() {
+        return this.population.getFirst();
     }
 
     private Chromosome getCrossOverPartner(Chromosome chromosome) {
@@ -71,7 +78,7 @@ class Population {
 
     private void doMutation() {
         List<Chromosome> newPopulation = new ArrayList<>();
-        for(int i = 0; i < this.population.size()/10; i++) {
+        for(int i = 0; i < 50; i++) {
             Chromosome mutation = this.population.get(RandomGenerator.
                     randomIndex(this.population.size())).mutate(problem);
             newPopulation.add(mutation);
@@ -81,13 +88,13 @@ class Population {
 
     private void doSpawn() {
         for (int i = 0; i < initialSize; i++) {
-            this.population.add(Chromosome.create(problem));
+            this.population.add(new Chromosome(problem));
         }
     }
 
     private void doSelection() {
         this.population.sort(Comparator.comparingInt(Chromosome::fitness));
-        this.population = this.population.stream().limit(this.initialSize).collect(Collectors.toList());
+        population = population.subList(0, initialSize);
     }
 }
 
@@ -95,27 +102,38 @@ class Chromosome {
     private List<Gene> matrix;
     private int duplicates;
 
-    private Chromosome(List<Gene> matrix) {
+    public Chromosome(int[][] problem) {
+        List<Gene> newMatrix = new ArrayList<>();
+        for (int i = 0; i < problem.length; i++) {
+            Gene gene = new Gene(problem[i]);
+            newMatrix.add(i, gene);
+        }
+        this.matrix = newMatrix;
+    }
+
+    public Chromosome(List<Gene> matrix) {
         this.matrix = matrix;
     }
 
-    public static Chromosome create(int[][] problem) {
-        List<Gene> matrix = new ArrayList<Gene>();
-        for (int i = 0; i < problem.length; i++) {
-            Gene gene = new Gene(problem[i]);
-            matrix.set(i, gene);
+    public int getDuplicates() {
+        return duplicates;
+    }
+
+    public void printChromosome() {
+        for (Gene gene : this.matrix) {
+            gene.printGene();
         }
-        return new Chromosome(matrix);
+        System.out.println(duplicates);
     }
 
     public List<Gene>[] split() {
-        List<Gene> first = new ArrayList<Gene>();
-        List<Gene> second = new ArrayList<Gene>();
+        List<Gene> first = new ArrayList<>();
+        List<Gene> second = new ArrayList<>();
         for (int i = 0; i < matrix.size(); i++) {
             if (i < matrix.size() / 2) {
-                first.set(i, matrix.get(i));
+                first.add(i, matrix.get(i));
             } else {
-                second.set(i - matrix.size() / 2, matrix.get(i));
+                second.add(i - matrix.size() / 2, matrix.get(i));
             }
         }
         List<Gene>[] result = new List[2];
@@ -257,14 +275,24 @@ class Chromosome {
 class Gene {
     private final int[] row;
 
+    public void printGene() {
+        for (int j : row) {
+            System.out.print(j + " ");
+        }
+        System.out.println();
+    }
+
     public Gene(int[] row) {
         List<Integer> sudokuNums = Stream.of(1, 2, 3, 4, 5, 6, 7, 8, 9)
                 .collect(Collectors.toCollection(ArrayList::new));
         for (int i = 0; i < row.length; i++) {
+            int index = RandomGenerator.randomIndex(sudokuNums.size());
             if (row[i] == 0) {
-                row[i] = sudokuNums.get(RandomGenerator.randomIndex(sudokuNums.size()));
+                row[i] = sudokuNums.get(index);
+                sudokuNums.remove(index);
+            } else {
+                sudokuNums.remove((Integer) row[i]);
             }
-            sudokuNums.remove(row[i]);
         }
         this.row = row;
     }
@@ -281,7 +309,8 @@ class Gene {
 }
 
 class RandomGenerator {
+    private final static Random R = new Random(System.currentTimeMillis());
     public static int randomIndex(int size) {
-        return (int) (Math.random() * size);
+        return R.nextInt(size);
     }
 }
