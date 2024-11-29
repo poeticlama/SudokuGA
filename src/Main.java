@@ -70,7 +70,13 @@ class Population {
     }
 
     private void doMutation() {
-
+        List<Chromosome> newPopulation = new ArrayList<>();
+        for(int i = 0; i < this.population.size()/10; i++) {
+            Chromosome mutation = this.population.get(RandomGenerator.
+                    randomIndex(this.population.size())).mutate(problem);
+            newPopulation.add(mutation);
+        }
+        this.population.addAll(newPopulation);
     }
 
     private void doSpawn() {
@@ -80,7 +86,8 @@ class Population {
     }
 
     private void doSelection() {
-
+        this.population.sort(Comparator.comparingInt(Chromosome::fitness));
+        this.population = this.population.stream().limit(this.initialSize).collect(Collectors.toList());
     }
 }
 
