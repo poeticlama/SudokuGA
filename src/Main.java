@@ -105,7 +105,7 @@ class Chromosome {
     public Chromosome(int[][] problem) {
         List<Gene> newMatrix = new ArrayList<>();
         for (int i = 0; i < problem.length; i++) {
-            Gene gene = new Gene(problem[i]);
+            Gene gene = new Gene(problem[i].clone());
             newMatrix.add(i, gene);
         }
         this.matrix = newMatrix;
@@ -129,11 +129,12 @@ class Chromosome {
     public List<Gene>[] split() {
         List<Gene> first = new ArrayList<>();
         List<Gene> second = new ArrayList<>();
+        int random = RandomGenerator.randomIndex(this.matrix.size() - 1) + 1;
         for (int i = 0; i < matrix.size(); i++) {
-            if (i < matrix.size() / 2) {
+            if (i < random) {
                 first.add(i, matrix.get(i));
             } else {
-                second.add(i - matrix.size() / 2, matrix.get(i));
+                second.add(i - random, matrix.get(i));
             }
         }
         List<Gene>[] result = new List[2];
@@ -156,43 +157,29 @@ class Chromosome {
         if (firstCrossover.size() + secondOther.size() == 9) {
             firstCrossover.addAll(secondOther);
         } else if (firstCrossover.size() + secondOther.size() < 9) {
-            if (firstCrossover.size() <= 4) {
-                for (int i = 0; i < 9 - secondOther.size() - first.size(); i++) {
-                    firstCrossover.add(second.get(i));
-                }
-            } else {
-                for (int i = first.size(); i < 9 - secondOther.size(); i++) {
-                    firstCrossover.add(firstOther.get(i));
-                }
+            for (int i = 0; i < 9 - secondOther.size() - first.size(); i++) {
+                firstCrossover.add(second.get(i));
             }
+            firstCrossover.addAll(secondOther);
         } else {
-            for (int i = first.size(); i < 9; i++) {
-                firstCrossover.add(first.get(i - first.size()));
-            }
+            firstCrossover.addAll(second);
             for (int i = 9; i > first.size(); i--) {
-                firstCrossover.set(i, secondOther.get(i - 10 + secondOther.size()));
+                firstCrossover.set(i - 1, secondOther.get(i - 10 + secondOther.size()));
             }
         }
 
         List<Gene> secondCrossover = new ArrayList<>(firstOther);
         if (secondCrossover.size() + second.size() == 9) {
-            secondCrossover.addAll(secondOther);
+            secondCrossover.addAll(second);
         } else if (secondCrossover.size() + second.size() < 9) {
-            if (secondCrossover.size() <= 4) {
-                for (int i = 0; i < 9 - second.size() - firstOther.size(); i++) {
-                    secondCrossover.add(secondOther.get(i));
-                }
-            } else {
-                for (int i = firstOther.size(); i < 9 - second.size(); i++) {
-                    secondCrossover.add(first.get(i));
-                }
+            for (int i = 0; i < 9 - second.size() - firstOther.size(); i++) {
+                secondCrossover.add(secondOther.get(i));
             }
+            secondCrossover.addAll(second);
         } else {
-            for (int i = firstOther.size(); i < 9; i++) {
-                secondCrossover.add(firstOther.get(i - firstOther.size()));
-            }
+            secondCrossover.addAll(secondOther);
             for (int i = 9; i > firstOther.size(); i--) {
-                secondCrossover.set(i, second.get(i - 10 + second.size()));
+                secondCrossover.set(i - 1, second.get(i - 10 + second.size()));
             }
         }
 
