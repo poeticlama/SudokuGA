@@ -8,7 +8,7 @@ public class Main {
         Population population = new Population(problem, 150);
         do {
             population.update();
-        } while (population.getAlpha().getDuplicates() != 0);
+        } while (population.getAlpha().fitness() != 0);
     }
 
     public static int[][] input() {
@@ -94,7 +94,7 @@ class Population {
 
     private void doSelection() {
         this.population.sort(Comparator.comparingInt(Chromosome::fitness));
-        population = population.subList(0, initialSize);
+        population = population.subList(0, population.size());
     }
 }
 
@@ -109,14 +109,12 @@ class Chromosome {
             newMatrix.add(i, gene);
         }
         this.matrix = newMatrix;
+        fitness();
     }
 
     public Chromosome(List<Gene> matrix) {
         this.matrix = matrix;
-    }
-
-    public int getDuplicates() {
-        return duplicates;
+        fitness();
     }
 
     public void printChromosome() {
@@ -226,6 +224,7 @@ class Chromosome {
 
         matrix.set(geneIndex1, mutated1);
         matrix.set(geneIndex2, mutated2);
+        fitness();
         return this;
     }
 
@@ -270,13 +269,20 @@ class Gene {
     public Gene(int[] row) {
         List<Integer> sudokuNums = Stream.of(1, 2, 3, 4, 5, 6, 7, 8, 9)
                 .collect(Collectors.toCollection(ArrayList::new));
+        for (int j : row) {
+            if (j != 0) {
+                sudokuNums.remove((Integer) j);
+            }
+        }
         for (int i = 0; i < row.length; i++) {
-            int index = RandomGenerator.randomIndex(sudokuNums.size());
-            if (row[i] == 0) {
-                row[i] = sudokuNums.get(index);
-                sudokuNums.remove(index);
+            if (!sudokuNums.isEmpty()) {
+                int index = RandomGenerator.randomIndex(sudokuNums.size());
+                if (row[i] == 0) {
+                    row[i] = sudokuNums.get(index);
+                    sudokuNums.remove(index);
+                }
             } else {
-                sudokuNums.remove((Integer) row[i]);
+                break;
             }
         }
         this.row = row;
